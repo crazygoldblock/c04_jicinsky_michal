@@ -8,7 +8,6 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
 import model.objectdata.Point2D;
-import model.objectdata.ShapeType;
 import model.rasterops.Filler;
 import model.rasterops.LineRasterizerBresenham;
 import model.rasterops.PolygonRasterizer;
@@ -56,7 +55,7 @@ public class Controller2D implements Controller {
         panel.clear();
         panel.repaint();
     }
-    private Point2D editEndPoint(Point2D start, Point2D end, boolean shift, ShapeType shape) {
+    private Point2D EditEndOnShift(Point2D start, Point2D end, boolean shift, boolean straight) {
         if (shift) {
             int lenX = Math.abs(start.x - end.x);
             int lenY = Math.abs(start.y - end.y);
@@ -64,7 +63,7 @@ public class Controller2D implements Controller {
             int maxLen = Math.max(lenX, lenY);
             int signX = (int)Math.signum((float)end.x - start.x);
             int signY = (int)Math.signum((float)end.y - start.y);
-            int notStraight = (shape == ShapeType.Usecka && minLen < maxLen / 2) ? 0 : 1;
+            int notStraight = (straight && minLen < maxLen / 2) ? 0 : 1;
 
             if (lenX > lenY) {
                 int y = start.y + lenX * signY * notStraight;
@@ -79,16 +78,20 @@ public class Controller2D implements Controller {
     }
     private void reDraw() {
 
+        // překreslení plátna při změně
+
         panel.clear();
 
+        // vykreslení všech nakreslených útvarů
         for (ShapeRasterizer shape : shapes) {
             shape.draw(panel.getRaster());
         }
 
         filler.setColors(primaryColor, secondaryColor);
 
+        // vykreslení úsečky která se právě vytváří
         if (start != null) {
-            Point2D newEnd = editEndPoint(start, end, shift, ShapeType.Usecka);
+            Point2D newEnd = EditEndOnShift(start, end, shift, true);
             
             line.setPoints(start, newEnd);
             line.setFiller(filler);
@@ -96,6 +99,7 @@ public class Controller2D implements Controller {
             line.draw(panel.getRaster());
         }
 
+        // vykreslení polygonu který se právě vytváří
         polygon.setFiller(filler);
         polygon.draw(panel.getRaster());
 
@@ -177,7 +181,7 @@ public class Controller2D implements Controller {
             }
             @Override
             public void keyReleased(KeyEvent e) {
-                // enter
+                // enter - dokončení polygonu
                 if (e.getKeyCode() == 10) {
                     shapes.add(polygon);
                     polygon = new PolygonRasterizer();
@@ -190,17 +194,17 @@ public class Controller2D implements Controller {
                 if (e.getKeyCode() == 17) {
                     control = false;
                 } 
-                // levá šipka
+                // levá šipka - změna primární barvy
                 if (e.getKeyCode() == 37) {
                     primaryColor = switchColor(primaryColorIndex++);
                     primaryColorIndex = primaryColorIndex % 8;
                 }
-                // pravá šipka
+                // pravá šipka - změna sekundární barvy
                 if (e.getKeyCode() == 39) {
                     secondaryColor = switchColor(secondaryColorIndex++);
                     secondaryColorIndex = secondaryColorIndex % 8;
                 }
-                // dolů šipka
+                // dolů šipka - změna útvaru
                 if (e.getKeyCode() == 40) {
                     if (polygon.Size() > 0) {
                         shapes.add(polygon);
@@ -208,15 +212,15 @@ public class Controller2D implements Controller {
                     }
                     shapeTypeIndex = switchShapeType(shapeTypeIndex);
                 }
-                // nahoru šipka
+                // nahoru šipka - změna stylu vykreslení
                 if (e.getKeyCode() == 38) {
                     fillerIndex = switchFiller(fillerIndex);
                 }
-                // C
+                // C - smazání plátna
                 if (e.getKeyCode() == 67) {
                     shapes.clear();
                 }
-                // Z
+                // Z - smazání posledního útvaru
                 if (e.getKeyCode() == 90) {
                     if (control && shapes.size() > 0) 
                         shapes.remove(shapes.size() - 1);
@@ -227,15 +231,18 @@ public class Controller2D implements Controller {
         panel.addMouseMotionListener(new MouseAdapter() {
             @Override
             public void mouseMoved(MouseEvent e) {
+                // pokud start není null tak tohle první zavolání této funkkce po dokončení vytváření úsečky
                 if (start != null) {
                     end = new Point2D(e.getX(), e.getY());
 
+                    // pokud kreslíme úsečku - přidat do listu
                     if (shapeTypeIndex == 0) {
                         shapes.add(line);
                         line = new LineRasterizerBresenham();
                     }
+                    // pokud kreslíme polygon - přidat další bod
                     else {
-                        end = editEndPoint(start, end, shift, ShapeType.Usecka);
+                        end = EditEndOnShift(start, end, shift, true);
                         polygon.setPoints(start, end);
                     }
 
@@ -250,7 +257,9 @@ public class Controller2D implements Controller {
                 }
             }
             public void mouseDragged(MouseEvent e) {
+                // pokud je start null = tohle je začátek vytváření pového útvaru
                 if (start == null) {
+                    // pokud kreslíme polygon start musí být konec poslední úsečky
                     if (shapeTypeIndex == 0 || polygon.Size() == 0) {
                         start = new Point2D(e.getX(), e.getY());
                     }

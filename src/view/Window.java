@@ -21,9 +21,8 @@ public class Window extends JFrame {
 
         setLocationRelativeTo(null);
 
-        // lepší až na konci, aby to neukradla nějaká komponenta v případně složitějším UI
         panel.setFocusable(true);
-        panel.grabFocus(); // důležité pro pozdější ovládání z klávesnice
+        panel.grabFocus();
     }
 
     public Panel getPanel() {

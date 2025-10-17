@@ -5,6 +5,9 @@ import java.awt.Color;
 import model.objectdata.Point2D;
 import model.rasterdata.Raster;
 
+/*
+ * vykreslení přechodu barev úsečky pomocí lineární interpolace
+ */
 public class TransitionFiller implements Filler {
     private Color cStart;
     private Color cEnd;

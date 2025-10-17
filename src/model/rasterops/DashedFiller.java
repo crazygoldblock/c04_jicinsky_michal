@@ -5,6 +5,9 @@ import java.awt.Color;
 import model.objectdata.Point2D;
 import model.rasterdata.Raster;
 
+/*
+ * vykreslení přerušované čáry
+ */
 public class DashedFiller implements Filler {
     private Color color;
 
